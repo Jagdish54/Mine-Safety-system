@@ -12,6 +12,26 @@ Codes for Slave Node:
 
 Code for Master Node: master_nrf_aws.py
 
+Before running any code create a blank csv file on both master and slave device. Following is a sample code for slave device:
+
+import csv
+with open('node1_data.csv', 'w+', newline ='') as csvfile:
+    fieldnames = ['timestamp',
+                  'temperature (C)',
+                  'humidity (%)',
+                  'lpg (ppm)',
+                  'carbon monoxide (ppm)',
+                  'smoke (ppm)',
+                  'light (lux)',
+                  'flame (y/n)']
+
+    writer = csv.DictWriter(csvfile, fieldnames = fieldnames)
+
+    writer.writeheader()
+
+For master device change the file name from 'node1_data.csv' to 'received_value_numbers.csv' if you're running my code.
+
+
 Run the codes for slave first and then the master node.
   1. read_Sensor_CSV_save.py   2.read_csv_send_master.py  3.read_csv_graph_generate.py  4.master_nrf_aws.py
 
