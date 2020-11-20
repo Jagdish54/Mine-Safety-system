@@ -1,6 +1,6 @@
 # Mine-Safety-system
 Mine safety system using Raspberry Pi, AWS Dynamodb, NRF24L01+, MQ2 , DHT22, LDR, and Flame sensors
-Refer to my blog for more details.
+Refer to my blog for more details: https://jagdishiot.blogspot.com/2020/11/mining-safety-and-monitoring-system.html
 
 A lot of ideas for coding taken from:
   For AWS connection: https://electronicsinnovation.com/how-to-get-raspberry-pi-to-interact-with-amazon-web-services-push-data-into-the-dynamodb/
