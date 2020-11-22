@@ -15,14 +15,16 @@ import json
 
 ##AWS CODE##################
 connflag = False
- 
-def on_connect(client, userdata, flags, rc):                # func for making connection
+
+# func for making connection 
+def on_connect(client, userdata, flags, rc):                
     global connflag
     print ("Connected to AWS")
     connflag = True
     print("Connection returned result: " + str(rc) )
- 
-def on_message(client, userdata, msg):                      # Func for Sending msg
+    
+# Func for Sending msg 
+def on_message(client, userdata, msg):                      
     print(msg.topic+" "+str(msg.payload))
 
 # get the MAC address of the specified interface
@@ -31,16 +33,12 @@ mac_ID = open('/sys/class/net/eth0/address').read()
 mac_ID = mac_ID[0:17]
   
 
- 
-#def on_log(client, userdata, level, buf):
-#    print(msg.topic+" "+str(msg.payload))
- 
 mqttc = paho.Client()                                       # mqttc object
 mqttc.on_connect = on_connect                               # assign on_connect func
 mqttc.on_message = on_message                               # assign on_message func
-#mqttc.on_log = on_log
 
-#### Change following parameters #### 
+
+#### Specify parameters for publishing and verifying account #### 
 awshost = "a2rsayzddbe2ho-ats.iot.ap-southeast-2.amazonaws.com"      # Endpoint
 awsport = 8883                                              # Port no.   
 clientId = "TestCoalClient"                                     # Thing_Name
@@ -60,34 +58,30 @@ mqttc.loop_start()                                          # Start the loop
 #####NRF24 Code#############
 GPIO.setmode(GPIO.BCM)
 
+#define pipes for connection
 pipes = [0xF0F0F0F0E1, 0xF0F0F0F0D2]
 
+#Define pins
 radio = RF24(22,0)
+#Begin Radio
 radio.begin()
-
-min_payload_size = 4
-
-max_payload_size = 128
-payload_size_increments_by = 1
-
-next_payload_size = min_payload_size
+#Define millis to start waiting for connection
 millis = lambda: int(round(time.time() * 1000))
-
-#radio.setPayloadSize(32)
+#Set Channel
 radio.setChannel(0x60)
-#radio.setPALevel(RF24.PA_MIN)
+
 radio.setAutoAck(True)
 radio.enableDynamicPayloads()
 radio.enableAckPayload()
-
+#Open pipes
 radio.openReadingPipe(1, pipes[0])
 radio.openWritingPipe(pipes[1])
 
 radio.setRetries(5, 15)
-
+#Print Radio Details
 radio.printDetails()
-#radio.startListening()
 
+#Function to receive data from sensor
 def receiveData():
     global string
     print("Ready to receive Data")
@@ -101,26 +95,32 @@ def receiveData():
     print("Payload Mesage from slave was = {}".format(string))
     radio.stopListening()
 
+#Conver received value into a list
 def convert(string):
     li = list(string.split(" "))
     return li
 
+#Main Function
 def main():
+    #Start Loop
     while True:
+        #Define name of commands
         command = [b"GET_TEMP", b'GET_GAS', b'GET_LIGHT', b'GET_FLAME']
-
+        
+        #Set sensor reading varuables as global
         global timestamp_string
         global temp_received
         global gas_received
         global light_received
         global flame_received
 
+        #Send command to slave
         for x in range(0,4):
             radio.write(command[x])
             print ("We sent the message of {}.".format(command[x]))
 
 
-        #check if it returnes a _FLAME
+        #start listening to check if it returnes value
             radio.startListening()
 
 
@@ -141,12 +141,14 @@ def main():
 
                 print('failed, response timed out.')
                 while timeout:
+                    #If timeout restart the function
                     main()
 
-
+        #If we receive any response from slave we start communication
             else:
-                # Grab the response, compare, and send to debugging spew
+                # Call revceiving function
                 receiveData()
+                #Save the received value in respective variables
                 if command[x] == b"GET_TEMP":
                     temp_received = string
                     temp_hum_list = convert(temp_received)
@@ -171,13 +173,15 @@ def main():
                 else:
                     print("No commands received to write in csv")
 
+                #Get current system time
                 now_time = datetime.now()
                 timestamp_string = now_time.strftime("%d-%m-%Y %H:%M:%S")
                 time.sleep(1)
                 
+         #Send data to the AWS cloud       
         if connflag == True:
             macIdStr = mac_ID
-       
+           #Convert message into jason format 
             paylodmsg0="{"
             paylodmsg1 = "\"mac_Id\": \""
             paylodmsg2 = "\", \"1.time_stamp\": \""  
@@ -201,15 +205,15 @@ def main():
                                                      paylodmsg10)
             paylodmsg = json.dumps(paylodmsg) 
             paylodmsg_json = json.loads(paylodmsg)       
-            mqttc.publish("MyCoalTest", paylodmsg_json , qos=1)        # topic: temperature # Publishing Temperature values
-            print("msg sent: MyCoalTest" ) # Print sent temperature msg on console
+            mqttc.publish("MyCoalTest", paylodmsg_json , qos=1)        # topic: Publish the sensor values to the cloud
+            print("msg sent: MyCoalTest" ) # Print sent sensor readings msg on console
             print(paylodmsg_json)
 
         else:
             print("waiting for connection to AWS...")        
                   
                 
-                
+        #Save received sensor readings into a csv file        
         with open('received_value_numbers.csv', 'a', newline ='') as csvfile:
             fieldnames = ['timestamp',
                           'temperature (C)',
@@ -233,7 +237,7 @@ def main():
 
 
         time.sleep(5)
-        
+#Call the main function        
 main()
 
 
